@@ -1,0 +1,56 @@
+* Define os parâmetros de conexão
+cIP = "186.202.152.106"           && IP do servidor MySQL
+cUsuario = "ornatustst"           && Nome de usuário do banco de dados
+cSenha = "Orn@170621"             && Senha do banco de dados
+cBanco = "ornatustst"             && Nome do banco de dados que deseja acessar (substitua pelo real)
+
+* Estabelece a conexão usando ODBC sem DSN (conexão DSN-less)
+nConnHandle = SQLSTRINGCONNECT("Driver={MySQL ODBC 5.2 Unicode Driver};Server=" + cIP + ";UID=" + cUsuario + ";PWD=" + cSenha + ";DATABASE=" + cBanco + ";")
+
+* Verifica se a conexão foi bem-sucedida
+IF nConnHandle > 0
+    MESSAGEBOX("Conexão bem-sucedida!")
+
+    * Exemplo de consulta
+    cSQL = "SELECT * FROM vip_movcli" 
+    nResult = SQLEXEC(nConnHandle, cSQL, "ResultadoCursor")
+
+    IF nResult > 0
+        BROWSE && Mostra os dados no Visual FoxPro
+    ELSE
+        MESSAGEBOX("Erro ao executar a consulta.")
+    ENDIF
+
+
+    * Parâmetros para o INSERT
+    * Define o ID do cliente
+Id_cliente = 14  && Defina o ID correto do cliente
+MESSAGEBOX("Valor de Id_cliente antes do INSERT: " + TRANSFORM(Id_cliente))
+
+* Verifica o valor de Id_cliente
+IF EMPTY(Id_cliente)
+    MESSAGEBOX("Erro: Id_cliente não foi definido corretamente.")
+    RETURN
+ENDIF
+
+* Monta o comando SQL de INSERT
+cSQLInsertMovCli = "INSERT INTO vip_movcli (Id_cliente, Dthrent, Dthrsai) " + ;
+                   "VALUES ('14', '2025-01-02 08:00:00', '2025-01-02 17:00:00')"
+
+* Exibe o comando SQL para inspeção
+MESSAGEBOX("Comando SQL: " + cSQLInsertMovCli)
+
+* Executa o comando de INSERT
+nResultInsertMovCli = SQLEXEC(nConnHandle, cSQLInsertMovCli)
+
+* Verifica o resultado
+IF nResultInsertMovCli > 0
+    MESSAGEBOX("Dados inseridos com sucesso na tabela vip_movcli!")
+ELSE
+    MESSAGEBOX("Erro ao inserir os dados na tabela vip_movcli.")
+ENDIF
+ENDIF
+
+
+* Fecha a conexão
+SQLDISCONNECT(nConnHandle)

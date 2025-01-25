@@ -1,0 +1,32 @@
+cIP = "186.202.152.106"           && IP do servidor MySQL
+cUsuario = "ornatustst"           && Nome de usuário do banco de dados
+cSenha = "Orn@170621"             && Senha do banco de dados
+cBanco = "ornatustst"             && Nome do banco de dados
+
+* Estabelece a conexão usando ODBC sem DSN
+nConnHandle = SQLSTRINGCONNECT("Driver={MySQL ODBC 8.0 Unicode Driver};Server=" + cIP + ";UID=" + cUsuario + ";PWD=" + cSenha + ";DATABASE=" + cBanco + ";")
+
+* Verifica se a conexão foi bem-sucedida
+IF nConnHandle > 0
+    MESSAGEBOX("Conexão bem-sucedida!")
+    
+    * Exemplo de consulta
+	cSQLI = "INSERT INTO vip_clientes ([Id_cliente], [Nome], [Dtnasc], [Senha], [Mae], [Foto], [Diasacesso], [Cpf], [Hriniacesso], [Hrfimacesso], [Livre_int], [Livre_text]) VALUES (1, 'João Silva', {^1990-05-15}, 'joao', 'Maria Silva', '', 30, '12345678901', {^08:00:00}, {^20:00:00}, 5, 'Texto de exemplo');"
+	SQLEXEC(cSQLI)
+	cSQL = "SELECT * FROM vip_clientes"
+    nResult = SQLEXEC(nConnHandle, cSQL, "ResultadoCursor")
+
+    IF nResult > 0
+        BROWSE  && Mostra os dados no Visual FoxPro
+    ELSE
+        MESSAGEBOX("Erro na execução da consulta.")
+    ENDIF
+    
+    SQLDISCONNECT(nConnHandle)
+ELSE
+    * Captura o erro
+    LOCAL aErro[1]
+    AERROR(aErro)
+    MESSAGEBOX("Falha ao conectar com o banco de dados: " + aErro[2])
+ENDIF
+

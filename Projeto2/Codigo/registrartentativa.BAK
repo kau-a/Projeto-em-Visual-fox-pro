@@ -1,0 +1,76 @@
+LPARAMETERS resultado,
+
+LOCAL lcClienteId, cSqlSelectId, lnResultadoSelectId, cSqlLastRecord, lnResultadoLastRecord, lnResultadoInsert, lnResultadoUpdate
+LOCAL lcMotivoFinal, cSqlInsert, cSqlUpdate, lnTentativasRestantes
+
+
+cSql = "SELECT id_cliente FROM vip_clientes WHERE Cpf = '"+cCpf+"'"
+            SQLEXEC(nConnHandle, cSql, "resultado")
+            SELECT Resultado
+
+* Obtém o ID do cliente a partir do CPF passado
+lcClienteId = Resultado.id_cliente
+
+IF EMPTY(lcClienteId)
+    MESSAGEBOX("Erro: ID NÃO informado ou inválido.", 48, "Erro")
+    RETURN
+ENDIF
+
+
+* Consulta o último registro do cliente
+cSqlLastRecord = ;
+    "SELECT Idstatus, Motbloqueio " + ;
+    "FROM vip_movcli " + ;
+    "WHERE Id_cliente = " + TRANSFORM(lcClienteId) + " " + ;
+    "ORDER BY Idmov DESC"
+
+lnResultadoLastRecord = SQLEXEC(nConnHandle, cSqlLastRecord, "UltimoRegistro")
+
+IF lnResultadoLastRecord < 0
+    MESSAGEBOX("Erro ao consultar o último registro do cliente. Código de erro: " + TRANSFORM(lnResultadoLastRecord), 48, "Erro")
+    RETURN
+ENDIF
+
+* Verifica se é necessário criar um novo registro ou atualizar um existente
+IF RECCOUNT("UltimoRegistro") = 0 OR UltimoRegistro.Idstatus <> -1
+    * Insere um novo registro com Idstatus = -1 e Motbloqueio = 4
+    cSqlInsert = ;
+        "INSERT INTO vip_movcli (Id_cliente, Idstatus, Motbloqueio) " + ;
+        "VALUES (" + TRANSFORM(lcClienteId) + ", -1, 4)"
+    lnResultadoInsert = SQLEXEC(nConnHandle, cSqlInsert)
+   
+    IF lnResultadoInsert < 0
+        MESSAGEBOX("Erro ao registrar tentativa inicial no banco de dados. Código de erro: " + TRANSFORM(lnResultadoInsert), 48, "Erro")
+        RETURN
+    ENDIF
+    lnTentativasRestantes = 4
+ELSE
+    * Atualiza o registro existente decrementando o Motbloqueio
+    cSqlUpdate = ;
+        "UPDATE vip_movcli " + ;
+        "SET Motbloqueio = Motbloqueio - 1 " + ;
+        "WHERE Id_cliente = " + TRANSFORM(lcClienteId) + " " + ;
+        "AND Idstatus = -1"
+    lnResultadoUpdate = SQLEXEC(nConnHandle, cSqlUpdate)
+
+    IF lnResultadoUpdate < 0
+        MESSAGEBOX("Erro ao atualizar o contador de tentativas. Código de erro: " + TRANSFORM(lnResultadoUpdate), 48, "Erro")
+        RETURN
+    ENDIF
+
+    * Recupera o valor atualizado de Motbloqueio
+    SELECT UltimoRegistro
+    lnTentativasRestantes = UltimoRegistro.Motbloqueio - 1
+ENDIF
+
+* Lógica de bloqueio ou aviso
+IF lnTentativasRestantes <= 0
+    MESSAGEBOX("Usuário bloqueado após exceder o limite de tentativas.", 16, "Bloqueio")
+ELSE
+    IF lnTentativasRestantes <= 2
+        MESSAGEBOX("Aviso: Você possui " + TRANSFORM(lnTentativasRestantes) + " tentativas restantes antes do bloqueio.", 48, "Aviso")
+    ENDIF
+ENDIF
+
+* Retorna sucesso
+RETURN 0

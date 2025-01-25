@@ -1,0 +1,2 @@
+LOCAL aErro[1]
+Error in line 29: Invalid use of a Visual FoxPro function as an array.

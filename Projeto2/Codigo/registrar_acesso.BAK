@@ -1,0 +1,27 @@
+PARAMETERS lcClienteId
+
+* Exibe o parâmetro recebido para debug
+? "ID do cliente:", lcClienteId
+
+* Gera a data e hora no formato MySQL
+lcDataHoraAtual = DTOC(DATE()) + " " + TIME()
+
+* Monta a consulta SQL para atualizar o registro mais recente
+lcSqlUpdate = ;
+    "UPDATE vip_movcli " + ;
+    "SET Dthrent = '" + lcDataHoraAtual + "' " + ;
+    "WHERE Id_cliente = " + TRANSFORM(lcClienteId) + " " + ;
+    "AND Dthrent IS NULL " + ;
+    "AND Dthrsai IS NULL " + ;
+    "ORDER BY idmov DESC " + ;
+    "LIMIT 1"
+
+* Executa a consulta SQL
+lnResultado = SQLEXEC(nConnHandle, lcSqlUpdate)
+
+IF lnResultado < 0
+    MESSAGEBOX("Erro ao registrar entrada. Código de erro: " + TRANSFORM(lnResultado) + CHR(13) + "Consulta SQL: " + lcSqlUpdate)
+    RETURN
+ENDIF
+
+MESSAGEBOX("Entrada registrada com sucesso.")

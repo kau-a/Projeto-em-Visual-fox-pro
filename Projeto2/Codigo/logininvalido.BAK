@@ -1,0 +1,50 @@
+* PRG para controle de erros de login
+
+PARAMETERS cCpf, cSenha, qntacesso
+
+* Verifica se o CPF existe no banco de dados
+lcCheckCpf = "SELECT Id_cliente FROM vip_clientes WHERE Cpf = '" + cCpf + "'"
+lnResultadoCheck = SQLEXEC(nConnHandle, lcCheckCpf, "ResultadoCpf")
+
+IF lnResultadoCheck < 0 OR EMPTY(ResultadoCpf.Id_cliente)
+    MESSAGEBOX("CPF não encontrado ou inválido.")
+    RETURN
+ENDIF
+
+* Obtém o ID do cliente
+lcClienteId = ResultadoCpf.Id_cliente
+
+* Define o motivo do bloqueio
+lcMotivoBloqueio = "Tentativa de login invalida. " + TRANSFORM(qntacesso) + " tentativa(s) restante(s)."
+
+* Verifica se as tentativas foram esgotadas
+IF qntacesso <= 0
+    lcMotivoBloqueio = "BLOQUEADO"
+ENDIF
+
+IF qntacesso <= 3
+    MESSAGEBOX(+ TRANSFORM(qntacesso) + " Tentativas restantes, em caso de utilização de todas as tentativas o usuário será bloqueado. ")
+ENDIF
+
+
+* Insere um registro no banco de dados sobre a tentativa de login
+lcSqlInsert = ;
+    "INSERT INTO vip_movcli (Id_cliente, Local, Dthrent, Dthrsai, Idstatus, Motbloqueio, Obsacesso) " + ;
+    "VALUES (" + ;
+        TRANSFORM(lcClienteId) + ", " + ;
+        "'Login', NULL, NULL, -1, " + ;
+        "'" + STRTRAN(lcMotivoBloqueio, "'", "''") + "', " + ;
+        "'Tentativa de login invalida')"
+
+* Executa o comando SQL
+lnResultadoInsert = SQLEXEC(nConnHandle, lcSqlInsert)
+
+IF lnResultadoInsert < 0
+    MESSAGEBOX("Erro ao registrar tentativa de login. Código de erro: " + TRANSFORM(lnResultadoInsert))
+    RETURN
+ENDIF
+
+
+
+RETURN
+
